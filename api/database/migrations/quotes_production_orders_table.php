@@ -24,6 +24,12 @@ return new class extends Migration
             $table->text('cancellation_reason')->nullable();
             $table->timestamp('materials_deducted_at')->nullable();
 
+            $table->foreignId('product_id')->nullable();
+            if (!Schema::hasColumn('production_orders', 'product_name')) {
+                $table->string('product_name')->after('product_id');
+            }
+            $table->boolean('is_custom_item')->default(false)->after('id');
+
             $table->timestamps();
         });
     }

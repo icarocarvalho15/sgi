@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Container, Title, Select, Button, Group, Table, NumberInput, Paper, Grid, Textarea, Divider, ActionIcon, Tooltip, Fieldset, TextInput, Text, Modal, FileInput, Anchor } from '@mantine/core';
+import { Container, Title, Select, Button, Group, Table, NumberInput, Paper, Grid, Textarea, Divider, ActionIcon, Tooltip, Fieldset, TextInput, Text, Modal, FileInput, Anchor, Switch } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { useParams } from 'react-router-dom';
-import { IconTrash, IconPrinter, IconPencil, IconUpload, IconFile, IconX } from '@tabler/icons-react';
+import { IconTrash, IconPrinter, IconPencil, IconUpload, IconFile, IconX, IconPackage, IconCubeSend } from '@tabler/icons-react';
 import api from '../api/axios';
-import type { SelectOption, Status, Customer, Product, Quote, QuoteItem, PaymentTerm, PaymentMethod, DeliveryMethod, NegotiationSource } from '../types';
+import type { SelectOption, Status, Product, Quote, QuoteItem, PaymentTerm, PaymentMethod, DeliveryMethod, NegotiationSource } from '../types';
 
 const formatPhone = (phone: string = '') => {
   const cleaned = phone.replace(/\D/g, '').substring(0, 11);
@@ -51,29 +51,34 @@ function QuoteFormPage() {
   const [isSavingHeader, setIsSavingHeader] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState<number | string>(1);
   const [paymentMethods, setPaymentMethods] = useState<SelectOption[]>([]);
   const [paymentTerms, setPaymentTerms] = useState<SelectOption[]>([]);
   const [deliveryMethods, setDeliveryMethods] = useState<SelectOption[]>([]);
   const [quoteStatuses, setQuoteStatuses] = useState<SelectOption[]>([]);
   const [negotiationSources, setNegotiationSources] = useState<SelectOption[]>([]);
+  const [isCustomItem, setIsCustomItem] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState<number | string>(1);
+  const [customName, setCustomName] = useState('');
+  const [customCost, setCustomCost] = useState<number | string>(0);
+  const [customPrice, setCustomPrice] = useState<number | string>(0);
   const [itemModalOpened, { open: openItemModal, close: closeItemModalHook }] = useDisclosure(false);
   const [editingItem, setEditingItem] = useState<QuoteItem | null>(null);
   const [docModalOpened, { open: openDocModal, close: closeDocModal }] = useDisclosure(false);
   const [customerToUpdate, setCustomerToUpdate] = useState<{ id: number; document: string; type: 'fisica' | 'juridica' } | null>(null);
-  const isLocked = initialStatus === 'Aprovado' || initialStatus === 'Cancelado';
   const [cancelModalOpened, { open: openCancelModal, close: closeCancelModal }] = useDisclosure(false);
   const [cancellationReason, setCancellationReason] = useState('');
-  
-  const _dummyCustomer: Customer | null = null;
-  // eslint-disable-next-line no-constant-condition
-  if (false) console.log(_dummyCustomer);
-  
+  const isLocked = initialStatus === 'Aprovado' || initialStatus === 'Cancelado';
+    
   const itemForm = useForm({
     initialValues: {
-      quantity: 1, unit_sale_price: 0, discount_percentage: 0,
-      profit_margin: 0, notes: '', file: null as File | null,
+      quantity: 1,
+      unit_sale_price: 0,
+      discount_percentage: 0,
+      profit_margin: 0,
+      notes: '',
+      file: null as File | null,
+      product_name: '',
     },
   });
 
@@ -85,13 +90,10 @@ function QuoteFormPage() {
     if (Number(itemForm.values.profit_margin).toFixed(2) !== newMargin.toFixed(2)) {
       itemForm.setFieldValue('profit_margin', newMargin);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemForm.values.unit_sale_price]);
   
   useEffect(() => {
-    api.get('/products', { params: { per_page: 1000 } }).then(res => {
-      setProducts(res.data.data);
-    });
+    api.get('/products', { params: { per_page: 1000 } }).then(res => setProducts(res.data.data));
     api.get('/payment-methods').then(res => setPaymentMethods(res.data.map((pm: PaymentMethod) => ({ value: String(pm.id), label: pm.name }))));
     api.get('/delivery-methods').then(res => setDeliveryMethods(res.data.map((dm: DeliveryMethod) => ({ value: String(dm.id), label: dm.name }))));
     api.get('/quote-statuses').then(res => setQuoteStatuses(res.data.map((qs: Status) => ({ value: String(qs.id), label: qs.name }))));
@@ -165,10 +167,59 @@ function QuoteFormPage() {
     .finally(() => setIsSavingHeader(false));
   };
 
-  const handleCloseItemModal = () => {
-    closeItemModalHook();
-    setEditingItem(null);
-    itemForm.reset();
+  const handleAddItem = () => {
+    if (!quoteId) return;
+    const numericQuantity = Number(quantity);
+    let payload: any = { quantity: numericQuantity };
+    if (isCustomItem) {
+      if (!customName.trim()) {
+        return notifications.show({ title: 'Erro', message: 'Digite o nome do item avulso.', color: 'red' });
+      }
+      if (Number(customPrice) <= 0) {
+        return notifications.show({ title: 'Erro', message: 'O preço de venda deve ser maior que zero.', color: 'red' });
+      }
+      payload = {
+        ...payload,
+        is_custom_item: true,
+        product_id: null,
+        product_name: customName,
+        unit_cost_price: Number(customCost),
+        unit_sale_price: Number(customPrice),
+      };
+    } else {
+      if (!selectedProduct) return notifications.show({ title: 'Erro', message: 'Selecione um produto.', color: 'red' });
+      const productDetails = products.find(p => String(p.id) === selectedProduct);
+      if (productDetails && productDetails.type === 'produto' && numericQuantity > productDetails.quantity_in_stock) {
+        notifications.show({
+          title: 'Atenção: Estoque',
+          message: `O produto "${productDetails.name}" possui apenas ${productDetails.quantity_in_stock} unidades.`,
+          color: 'yellow',
+          autoClose: 8000,
+        });
+      }
+      payload = {
+        ...payload,
+        product_id: selectedProduct,
+        is_custom_item: false
+      };
+    }
+    api.post(`/quotes/${quoteId}/items`, payload)
+    .then(res => {
+      setQuote(res.data);
+      setQuantity(1);
+      if (isCustomItem) {
+        setCustomName('');
+        setCustomCost(0);
+        setCustomPrice(0);
+      } else {
+        setSelectedProduct(null);
+      }
+      notifications.show({ title: 'Sucesso!', message: 'Item adicionado.', color: 'green' });
+    })
+    .catch((err) => {
+      console.error(err);
+      notifications.show({ title: 'Erro!', message: 'Não foi possível adicionar o item.', color: 'red' });
+    });
   };
   
   const handleOpenEditItemModal = (item: QuoteItem) => {
@@ -179,36 +230,15 @@ function QuoteFormPage() {
       discount_percentage: item.discount_percentage,
       notes: item.notes || '',
       file: null,
+      product_name: item.product_name,
     });
     openItemModal();
-  };
-
-  const handleAddItem = () => {
-    if (!selectedProduct || !quantity || !quoteId) return;
-    const productDetails = products.find(p => String(p.id) === selectedProduct);
-    const numericQuantity = Number(quantity);
-    if (productDetails && productDetails.type === 'produto' && numericQuantity > productDetails.quantity_in_stock) {
-      notifications.show({
-        title: 'Atenção: Estoque Insuficiente',
-        message: `O produto "${productDetails.name}" possui apenas ${productDetails.quantity_in_stock} unidades em estoque.`,
-        color: 'yellow',
-        autoClose: 10000,
-      });
-    }
-    api.post(`/quotes/${quoteId}/items`, { product_id: selectedProduct, quantity: numericQuantity })
-    .then(res => {
-      setQuote(res.data);
-      setSelectedProduct(null);
-      setQuantity(1);
-      notifications.show({ title: 'Sucesso!', message: 'Item adicionado.', color: 'green' });
-    })
-    .catch(() => notifications.show({ title: 'Erro!', message: 'Não foi possível adicionar o item.', color: 'red' }));
   };
 
   const handleUpdateHeader = () => {
     if (!quote) return;
     setIsSavingHeader(true);
-    api.put(`/quotes/${quoteId}`, {
+    const payload = {
       payment_method_id: quote.payment_method_id,
       payment_term_id: quote.payment_term_id,
       delivery_method_id: quote.delivery_method_id,
@@ -216,9 +246,9 @@ function QuoteFormPage() {
       negotiation_source_id: quote.negotiation_source_id,
       delivery_datetime: quote.delivery_datetime,
       discount_percentage: quote.discount_percentage,
-      status: quote.status,
       notes: quote.notes,
-    })
+    };
+    api.put(`/quotes/${quoteId}`, payload)
     .then(res => {
       setQuote(res.data);
       setInitialStatus(res.data.status?.name || null);
@@ -257,26 +287,35 @@ function QuoteFormPage() {
     data.append('unit_sale_price', String(values.unit_sale_price));
     data.append('discount_percentage', String(values.discount_percentage));
     data.append('notes', values.notes);
+    if (editingItem.is_custom_item) {
+      data.append('product_name', values.product_name);
+    }
+
     if (values.file) data.append('file', values.file);
     data.append('_method', 'PUT');
+
     api.post(`/quotes/${quote.id}/items/${editingItem.id}`, data)
     .then(res => {
       setQuote(res.data);
       handleCloseItemModal();
       notifications.show({ title: 'Sucesso!', message: 'Item atualizado.', color: 'green'});
     })
-    .catch(() => notifications.show({ title: 'Erro!', message: 'Não foi possível atualizar o item.', color: 'red'}));
+    .catch(() => notifications.show({ title: 'Erro!', message: 'Não foi possível atualizar.', color: 'red'}));
+  };
+
+  const handleCloseItemModal = () => {
+    closeItemModalHook();
+    setEditingItem(null);
+    itemForm.reset();
   };
   
   const handleRemoveItem = (itemId: number) => {
     if (!quote) return;
     if (window.confirm('Tem certeza?')) {
-      api.delete(`/quotes/${quote.id}/items/${itemId}`)
-      .then(res => {
+      api.delete(`/quotes/${quote.id}/items/${itemId}`).then(res => {
         setQuote(res.data);
-        notifications.show({ title: 'Sucesso!', message: 'Item removido.', color: 'green'});
-      })
-      .catch(() => notifications.show({ title: 'Erro!', message: 'Não foi possível remover o item.', color: 'red' }));
+        notifications.show({ title: 'Sucesso', message: 'Item removido', color: 'green'});
+      });
     }
   };
 
@@ -324,7 +363,13 @@ function QuoteFormPage() {
   const itemRows = quote?.items?.map((item) => (
   <Table.Tr key={item.id}>
     <Table.Td>
-      {item.product?.name ?? 'Produto Indisponível'}
+      <Group gap="xs">
+        {item.is_custom_item ?
+          <Tooltip label="Item Avulso/Sob Demanda"><IconCubeSend size={16} color="orange" /></Tooltip> : 
+          <Tooltip label="Produto Cadastrado"><IconPackage size={16} color="gray" /></Tooltip>
+        }
+        <Text size="sm">{item.product_name}</Text>
+      </Group>
       {item.notes && <Text size="xs" c="dimmed">Obs: {item.notes}</Text>}
       {item.file_path && (
         <Anchor href={`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}/storage/${item.file_path}`} target="_blank" size="xs">
@@ -346,16 +391,7 @@ function QuoteFormPage() {
   </Table.Tr>
   ));
 
-  if (
-    !quote ||
-    !paymentMethods.length ||
-    !paymentTerms.length ||
-    !deliveryMethods.length ||
-    !quoteStatuses.length ||
-    !negotiationSources.length
-  ) {
-    return <Container><Title>Carregando Orçamento...</Title></Container>;
-  }
+  if (!quote || !paymentMethods.length || !paymentTerms.length || !deliveryMethods.length || !quoteStatuses.length || !negotiationSources.length) return <Container><Title>Carregando Orçamento...</Title></Container>;
 
   return (
     <Container size="xl">
@@ -376,13 +412,16 @@ function QuoteFormPage() {
         </Group>
       </Modal>
 
-      <Modal opened={itemModalOpened} onClose={handleCloseItemModal} title={`Editar Item: ${editingItem?.product.name}`}>
+      <Modal opened={itemModalOpened} onClose={handleCloseItemModal} title={`Editar Item: ${editingItem?.product_name}`}>
         <form onSubmit={itemForm.onSubmit(handleItemUpdate)}>
           <Grid>
-            <Grid.Col span={4}><NumberInput label="Quantidade" min={1} {...itemForm.getInputProps('quantity')} /></Grid.Col>
-            <Grid.Col span={4}><TextInput label="Preço Unit." value={formatCurrency(itemForm.values.unit_sale_price)} onChange={(e) => itemForm.setFieldValue('unit_sale_price', Number(e.target.value.replace(/\D/g, ''))/100)} /></Grid.Col>
-            <Grid.Col span={4}><NumberInput label="Lucro (%)" min={0} max={99.99} decimalScale={2} {...itemForm.getInputProps('profit_margin')} readOnly /></Grid.Col>
-            <Grid.Col span={4}><NumberInput label="Desconto (%)" min={0} max={100} {...itemForm.getInputProps('discount_percentage')} /></Grid.Col>
+            {!!editingItem?.is_custom_item && (
+              <Grid.Col span={12}><TextInput label="Nome do Item" {...itemForm.getInputProps('product_name')} /></Grid.Col>
+            )}
+            <Grid.Col span={6}><NumberInput label="Quantidade" min={1} {...itemForm.getInputProps('quantity')} /></Grid.Col>
+            <Grid.Col span={6}><TextInput label="Preço Unit." value={formatCurrency(itemForm.values.unit_sale_price)} onChange={(e) => itemForm.setFieldValue('unit_sale_price', Number(e.target.value.replace(/\D/g, ''))/100)} /></Grid.Col>
+            <Grid.Col span={6}><NumberInput label="Lucro (%)" decimalScale={2} {...itemForm.getInputProps('profit_margin')} readOnly /></Grid.Col>
+            <Grid.Col span={6}><NumberInput label="Desconto (%)" min={0} max={100} {...itemForm.getInputProps('discount_percentage')} /></Grid.Col>
           </Grid>
           <Textarea mt="md" label="Observações de Personalização" placeholder="Detalhes, medidas, cores..." minRows={3} {...itemForm.getInputProps('notes')} />
           {editingItem?.file_path ? (
@@ -440,25 +479,51 @@ function QuoteFormPage() {
       <Divider my="xl" label="Itens do Orçamento" labelPosition="center" />
 
       {!isLocked && (
-        <Paper withBorder p="md" mb="xl">
-          <Title order={4} mb="md">Adicionar Produto ao Orçamento</Title>
-          <Group align="flex-end">
-            <Select label="Produto" placeholder="Busque por nome ou código" data={products.map(p => ({ value: String(p.id), label: `${p.name} (Código: ${p.sku})` }))} value={selectedProduct} onChange={setSelectedProduct} searchable clearable style={{ flex: 1 }} />
-            <NumberInput label="Quantidade" value={quantity} onChange={setQuantity} min={1} allowDecimal={false} style={{ width: 120 }} />
-            <Button onClick={handleAddItem}>Adicionar</Button>
+        <Paper withBorder p="md" mb="xl" bg={isCustomItem ? "orange.0" : undefined}>
+          <Group justify="space-between" mb="md">
+            <Title order={4}>{isCustomItem ? 'Adicionar Item Avulso / Sob Demanda' : 'Adicionar Produto do Estoque'}</Title>
+            <Switch size="md" onLabel="AVULSO" offLabel="PADRÃO" label="Produto Avulso" checked={isCustomItem} onChange={(event) => setIsCustomItem(event.currentTarget.checked)} />
           </Group>
+          {isCustomItem ? (
+            <Grid align="flex-end">
+              <Grid.Col span={{ base: 12, md: 5 }}>
+                <TextInput label="Descrição do Item / Serviço" placeholder="Ex: Instalação, Parafuso Especial..." required value={customName} onChange={(e) => setCustomName(e.currentTarget.value)} />
+              </Grid.Col>
+              <Grid.Col span={{ base: 6, md: 2 }}>
+                <TextInput label="Custo (R$)" placeholder="0,00" value={formatCurrency(Number(customCost))} onChange={(e) => setCustomCost(Number(e.target.value.replace(/\D/g, ''))/100)} />
+              </Grid.Col>
+              <Grid.Col span={{ base: 6, md: 2 }}>
+                <TextInput label="Venda (R$)" placeholder="0,00" required value={formatCurrency(Number(customPrice))} onChange={(e) => setCustomPrice(Number(e.target.value.replace(/\D/g, ''))/100)} />
+              </Grid.Col>
+              <Grid.Col span={{ base: 6, md: 1 }}>
+                <NumberInput label="Qtd" value={quantity} onChange={setQuantity} min={1} allowDecimal={false} />
+              </Grid.Col>
+              <Grid.Col span={{ base: 6, md: 2 }}>
+                <Button fullWidth onClick={handleAddItem} color="orange">Adicionar Item</Button>
+              </Grid.Col>
+              <Grid.Col span={12}>
+                <Text size="xs" c="dimmed" ta="right">Lucro Estimado: {calculateProfitMargin(Number(customCost), Number(customPrice))}%</Text>
+              </Grid.Col>
+            </Grid>
+          ) : (
+            <Group align="flex-end">
+              <Select label="Produto" placeholder="Busque por nome ou código" data={products.map(p => ({ value: String(p.id), label: `${p.name} (Ref: ${p.sku})` }))} value={selectedProduct} onChange={setSelectedProduct} searchable clearable style={{ flex: 1 }} />
+              <NumberInput label="Quantidade" value={quantity} onChange={setQuantity} min={1} allowDecimal={false} style={{ width: 120 }} />
+              <Button onClick={handleAddItem}>Adicionar</Button>
+            </Group>
+          )}
         </Paper>
       )}
 
       <Table>
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Produto</Table.Th>
+            <Table.Th>Produto / Serviço</Table.Th>
             <Table.Th>Qtd.</Table.Th>
             <Table.Th>Preço Unit.</Table.Th>
             <Table.Th>Lucro (%)</Table.Th>
             <Table.Th>Desconto (%)</Table.Th>
-            <Table.Th>Total do Item</Table.Th>
+            <Table.Th>Total</Table.Th>
             <Table.Th>Ações</Table.Th>
           </Table.Tr>
         </Table.Thead>
@@ -469,9 +534,8 @@ function QuoteFormPage() {
         </Table.Tbody>
         <Table.Tfoot>
           <Table.Tr>
-            <Table.Td colSpan={5}></Table.Td>
-            <Table.Th>Total do Orçamento:</Table.Th>
-            <Table.Th>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(quote.total_amount)}</Table.Th>
+            <Table.Td colSpan={5}><Text fw={700}>Total do Orçamento:</Text></Table.Td>
+            <Table.Td><Text fw={700} size="lg">{formatCurrency(quote.total_amount)}</Text></Table.Td>
           </Table.Tr>
         </Table.Tfoot>
       </Table>

@@ -190,14 +190,16 @@ function ProductionPage() {
                 <Table.Tr key={item.id}>
                   <Table.Td>
                     <Group gap="xs" wrap="nowrap">
-                      {item.product.quantity_in_stock < 0 && (
+                      {!item.is_custom_item && item.product && item.product.quantity_in_stock < 0 && (
                         <Tooltip label={`Estoque atual: ${item.product.quantity_in_stock}. Reposição necessária!`} color="red">
                           <ThemeIcon color="red" variant="light" size="sm" radius="xl">
                             <IconAlertTriangle size={14} />
                           </ThemeIcon>
                         </Tooltip>
                       )}
-                      {item.product.name}
+                      <Text size="sm">
+                        {item.is_custom_item ? (item.product_name || 'Item Avulso') : (item.product?.name || item.product_name || 'Produto Não Encontrado')}
+                      </Text>
                     </Group>
                     {item.notes && <Text size="xs" c="dimmed" mt={4}>Obs: {item.notes}</Text>}
                     {item.file_path && (
@@ -208,16 +210,22 @@ function ProductionPage() {
                   </Table.Td>
                   <Table.Td>{item.quantity}</Table.Td>
                   <Table.Td>
-                    {item.product.type === 'servico' && item.product.components && item.product.components.length > 0 ? (
-                      <List size="xs">
-                        {item.product.components.map(comp => (
-                          <List.Item key={comp.id}>
-                            {comp.component.name} (x{Number(comp.quantity_used)})
-                          </List.Item>
-                        ))}
-                      </List>
+                    {item.is_custom_item ? (
+                      <Text size="xs" c="dimmed" fs="italic">Item Avulso / Sob Demanda (sem ficha técnica)</Text>
                     ) : (
-                    <Text size="xs" c="dimmed">{item.product.type === 'servico' ? 'Sem composição' : 'Produto Físico (Baixa direta)'}</Text>
+                      item.product && item.product.type === 'servico' && item.product.components && item.product.components.length > 0 ? (
+                        <List size="xs">
+                          {item.product.components.map(comp => (
+                            <List.Item key={comp.id}>
+                              {comp.component.name} (x{Number(comp.quantity_used)})
+                            </List.Item>
+                          ))}
+                        </List>
+                      ) : (
+                      <Text size="xs" c="dimmed">
+                        {item.product?.type === 'servico' ? 'Sem composição' : 'Produto Físico (Baixa direta)'}
+                      </Text>
+                      )
                     )}
                   </Table.Td>
                 </Table.Tr>))}

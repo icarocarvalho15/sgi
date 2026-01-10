@@ -15,42 +15,69 @@ class QuoteItemController extends Controller
         $this->authorize('create', [QuoteItem::class, $quote]);
 
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'nullable|exists:products,id',
+            'product_name' => 'required_without:product_id|string|max:255',
+            'unit_sale_price' => 'required_without:product_id|numeric|min:0',
+            'unit_cost_price' => 'nullable|numeric|min:0',
             'quantity' => 'required|integer|min:1',
+            'is_custom_item' => 'boolean',
         ]);
 
-        $product = Product::find($validated['product_id']);
+        if (!empty($validated['product_id'])) {
+            $product = Product::find($validated['product_id']);
 
-        $item = $quote->items()->where('product_id', $product->id)->first();
+            $item = $quote->items()->where('product_id', $product->id)->first();
 
-        if ($item) {
-            $item->increment('quantity', $validated['quantity']);
-        } else {
-
-            $costPrice = $product->isService() ? 0 : $product->cost_price;
-            $salePrice = $product->sale_price;
-            $profit = 0;
+            if ($item) {
+                $item->increment('quantity', $validated['quantity']);
+            } else {
+                $costPrice = $product->isService() ? 0 : $product->cost_price;
+                $salePrice = $product->sale_price;
+                $profitMargin = 0;
+                if ($salePrice > 0) {
+                    $lucro = $salePrice - $costPrice;
+                    $profitMargin = ($lucro / $salePrice) * 100;
+                }
+                
+                $item = $quote->items()->create([
+                    'tenant_id' => $quote->tenant_id,
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'quantity' => $validated['quantity'],
+                    'unit_cost_price' => $costPrice,
+                    'unit_sale_price' => $salePrice,
+                    'is_custom_item' => false,
+                    'discount_percentage' => 0,
+                    'profit_margin' => $profitMargin,
+                    'total_price' => $validated['quantity'] * $salePrice,
+                ]);
+            }
+        }
+        else {
+            $costPrice = $request->input('unit_cost_price', 0);
+            $salePrice = $request->input('unit_sale_price');
             
+            $profitMargin = 0;
             if ($salePrice > 0) {
                 $lucro = $salePrice - $costPrice;
-                $profit = $lucro / $salePrice;
+                $profitMargin = ($lucro / $salePrice) * 100;
             }
-            
+
             $item = $quote->items()->create([
                 'tenant_id' => $quote->tenant_id,
-                'product_id' => $product->id,
-                'product_name' => $product->name,
+                'product_id' => null,
+                'product_name' => $validated['product_name'],
                 'quantity' => $validated['quantity'],
-                'unit_cost_price' => $product->isService() ? 0 : $product->cost_price,
-                'unit_sale_price' => $product->sale_price,
+                'unit_cost_price' => $costPrice,
+                'unit_sale_price' => $salePrice,
+                'is_custom_item' => true,
                 'discount_percentage' => 0,
-                'profit_margin' => $profit * 100,
-                'total_price' => $validated['quantity'] * $product->sale_price,
+                'profit_margin' => $profitMargin,
+                'total_price' => $validated['quantity'] * $salePrice,
             ]);
         }
         
         $item->updateTotalPrice();
-        
         $quote->recalculateTotals();
         
         return $quote->load(['items.product', 'status', 'paymentMethod', 'deliveryMethod', 'negotiationSource']);
@@ -60,14 +87,20 @@ class QuoteItemController extends Controller
     {
         $this->authorize('update', [$quote_item, $quote]);
 
-        $validatedData = $request->validate([
+        $rules = [
             'quantity' => 'sometimes|required|integer|min:1',
             'unit_sale_price' => 'sometimes|required|numeric|min:0',
             'discount_percentage' => 'sometimes|required|numeric|min:0|max:100',
             'profit_margin' => 'sometimes|required|numeric|min:0|max:99.99',
             'notes' => 'nullable|string',
             'file' => 'nullable|file|mimes:pdf,jpg,png,jiff,tiff,zip,psd,cdr,ai,eps|max:524288',
-        ]);
+        ];
+
+        if ($quote_item->is_custom_item) {
+            $rules['product_name'] = 'sometimes|required|string|max:255';
+        }
+
+        $validatedData = $request->validate($rules);
 
         $costPrice = $quote_item->unit_cost_price;
 
@@ -78,7 +111,7 @@ class QuoteItemController extends Controller
             }
         } elseif ($request->has('unit_sale_price')) {
             $salePrice = $validatedData['unit_sale_price'];
-            if ($salePrice > 0 && $costPrice > 0) {
+            if ($salePrice > 0 && $costPrice >= 0) {
                 $validatedData['profit_margin'] = (($salePrice - $costPrice) / $salePrice) * 100;
             } else {
                 $validatedData['profit_margin'] = 0;

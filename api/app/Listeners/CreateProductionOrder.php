@@ -37,6 +37,7 @@ class CreateProductionOrder
             'customer_id' => $quote->customer_id,
             'user_id' => $quote->user_id,
             'status_id' => $pendingStatus->id,
+            'due_date' => $quote->delivery_datetime,
             'notes' => $quote->notes,
         ]);
     }

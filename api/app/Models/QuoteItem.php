@@ -16,8 +16,10 @@ class QuoteItem extends Model
         'quote_id',
         'product_id',
         'product_name',
+        'is_custom_item',
         'quantity',
         'unit_cost_price',
+        'cost_price',
         'unit_sale_price',
         'discount_percentage',
         'total_price',
@@ -25,6 +27,10 @@ class QuoteItem extends Model
         'notes',
         'file_path',
         'commission_percentage',
+    ];
+
+    protected $casts = [
+        'is_custom_item' => 'boolean',
     ];
 
     protected static function booted(): void
@@ -45,6 +51,12 @@ class QuoteItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function getProfitAttribute()
+    {
+        $cost = $this->cost_price ?? 0;
+        return ($this->unit_cost_price - $cost) * $this->quantity;
     }
 
     public function updateTotalPrice()

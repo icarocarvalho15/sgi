@@ -124,7 +124,7 @@ export function CustomerForm({ customer, onSuccess, onCancel }: CustomerFormProp
                     </Grid.Col>
                 )}
                 <Grid.Col span={{ base: 12, md: 6 }}>
-                    <TextInput label="E-mail" type="email" value={formData.email || ''} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} required />
+                    <TextInput label="E-mail" type="email" value={formData.email || ''} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 6 }}>
                     <TextInput label="Telefone" placeholder="(XX) XXXXX-XXXX" value={formatPhone(formData.phone || '')} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value.replace(/\D/g, '') }))} maxLength={15} required />
@@ -133,25 +133,25 @@ export function CustomerForm({ customer, onSuccess, onCancel }: CustomerFormProp
                 <Grid.Col span={12}><Title order={5} mt="md">Endereço Principal</Title></Grid.Col>
                 
                 <Grid.Col span={{ base: 12, md: 4 }}>
-                    <TextInput label="CEP" value={formData.address.cep} onChange={(e) => setFormData(p => ({...p, address: {...p.address, cep: e.target.value.replace(/\D/g, '')}}))} onBlur={handleCepBlur} rightSection={isCepLoading ? <Loader size="xs" /> : null} required />
+                    <TextInput label="CEP" value={formData.address.cep} onChange={(e) => setFormData(p => ({...p, address: {...p.address, cep: e.target.value.replace(/\D/g, '')}}))} onBlur={handleCepBlur} rightSection={isCepLoading ? <Loader size="xs" /> : null} />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 8 }}>
-                    <TextInput label="Rua / Logradouro" value={formData.address.street} onChange={(e) => setFormData(p => ({...p, address: {...p.address, street: e.target.value}}))} required />
+                    <TextInput label="Rua / Logradouro" value={formData.address.street} onChange={(e) => setFormData(p => ({...p, address: {...p.address, street: e.target.value}}))} />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 4 }}>
-                    <TextInput label="Número" value={formData.address.number} onChange={(e) => setFormData(p => ({...p, address: {...p.address, number: e.target.value}}))} required />
+                    <TextInput label="Número" value={formData.address.number} onChange={(e) => setFormData(p => ({...p, address: {...p.address, number: e.target.value}}))} />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 8 }}>
                     <TextInput label="Complemento/Referência" value={formData.address.complement || ''} onChange={(e) => setFormData(p => ({...p, address: {...p.address, complement: e.target.value}}))} />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 5 }}>
-                    <TextInput label="Bairro" value={formData.address.neighborhood} onChange={(e) => setFormData(p => ({...p, address: {...p.address, neighborhood: e.target.value}}))} required />
+                    <TextInput label="Bairro" value={formData.address.neighborhood} onChange={(e) => setFormData(p => ({...p, address: {...p.address, neighborhood: e.target.value}}))} />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 5 }}>
-                    <TextInput label="Cidade" value={formData.address.city} onChange={(e) => setFormData(p => ({...p, address: {...p.address, city: e.target.value}}))} required />
+                    <TextInput label="Cidade" value={formData.address.city} onChange={(e) => setFormData(p => ({...p, address: {...p.address, city: e.target.value}}))} />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 2 }}>
-                    <TextInput label="UF" value={formData.address.state} onChange={(e) => setFormData(p => ({...p, address: {...p.address, state: e.target.value}}))} required />
+                    <TextInput label="UF" value={formData.address.state} onChange={(e) => setFormData(p => ({...p, address: {...p.address, state: e.target.value}}))} />
                 </Grid.Col>
             </Grid>
             <Group justify="flex-end" mt="lg">

@@ -369,7 +369,7 @@ function QuoteListPage() {
                     </Table.Thead>
                     <Table.Tbody>{quote.items.map(item => (
                       <Table.Tr key={item.id}>
-                        <Table.Td>{item.product?.name ?? 'Produto não encontrado'}</Table.Td>
+                        <Table.Td>{item.product_name || item.product?.name || 'Item Avulso / Sob Demanda'}</Table.Td>
                         <Table.Td>{item.quantity}</Table.Td>
                         <Table.Td>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.unit_sale_price)}</Table.Td>
                         <Table.Td>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.total_price)}</Table.Td>

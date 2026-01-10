@@ -82,6 +82,8 @@ export interface QuoteItem {
   id: number;
   tenant_id: number;
   product: Product;
+  product_name: string | undefined;
+  is_custom_item: any;
   quantity: number;
   unit_cost_price: number;
   unit_sale_price: number;

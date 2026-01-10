@@ -12,9 +12,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->onDelete('cascade');
             $table->foreignId('quote_id')->constrained()->onDelete('cascade');
-            $table->foreignId('product_id')->constrained()->onDelete('restrict');
+            $table->foreignId('product_id')->nullable();
 
-            $table->string('product_name');
+            if (!Schema::hasColumn('quote_items', 'product_name')) {
+                $table->string('product_name');
+            }
 
             $table->integer('quantity');
             $table->decimal('unit_cost_price', 10, 2);
@@ -26,6 +28,10 @@ return new class extends Migration
 
             $table->text('notes')->nullable();
             $table->string('file_path')->nullable();
+
+            $table->decimal('cost_price', 10, 2)->default(0);
+
+            $table->boolean('is_custom_item')->default(false);
 
             $table->decimal('commission_percentage', 5, 2)->default(0);
 

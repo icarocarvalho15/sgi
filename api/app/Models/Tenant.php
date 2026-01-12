@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -16,9 +16,11 @@ class Tenant extends Model
      */
     protected $fillable = [
         'plan_id',
+        'subscription_status',
+        'subscription_expires_at',
         'name',
-        'is_active' => 'boolean',
         'status',
+        'is_active' => 'boolean',
         'legal_name',
         'company_fantasy_name',
         'cnpj',
@@ -43,5 +45,46 @@ class Tenant extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function hasReachedLimit($limitType, $currentCount)
+    {
+        if (!$this->plan) return false;
+        
+        $limit = $this->plan->{$limitType};
+        
+        if ($limit === -1) return false;
+        
+        return $currentCount >= $limit;
+    }
+
+    public function canCreate($resource)
+    {
+        if (!$this->plan) return false;
+
+        $limits = [
+            'user' => 'max_users',
+            'product' => 'max_products',
+        ];
+
+        if (!array_key_exists($resource, $limits)) return true;
+
+        $column = $limits[$resource];
+        $limit = $this->plan->{$column};
+
+        if ($limit === -1) return true;
+
+        $currentCount = match ($resource) {
+            'user' => $this->users()->count(),
+            'product' => $this->products()->count(),
+            default => 0,
+        };
+
+        return $currentCount < $limit;
     }
 }

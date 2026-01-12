@@ -18,7 +18,7 @@ class UserPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('users.manage');
+        return $user->can('users.manage') && $user->tenant->canCreate('user');
     }
     
     public function update(User $user, User $model): bool

@@ -30,6 +30,9 @@ class DeductProductionMaterials
             try {
                 DB::transaction(function () use ($order) {
                     foreach ($order->quote->items as $item) {
+                        if (!$item->product) {
+                            continue;
+                        }
                         if ($item->product->isService() && $item->product->components->isNotEmpty()) {                            
                             foreach ($item->product->components as $component) {
                                 $totalQuantityToDeduct = $item->quantity * $component->quantity_used;
@@ -41,7 +44,7 @@ class DeductProductionMaterials
                                     'notes' => "Baixa de material p/ O.P. Nº {$order->internal_id} (Item: {$item->product_name})",
                                 ]);
                             }
-                        } 
+                        }
                         elseif ($item->product->isProduct()) {
                             StockMovement::create([
                                 'tenant_id' => $order->tenant_id,

@@ -10,6 +10,7 @@ import { IconAlertTriangle, IconClockHour4, IconArrowUpRight, IconReceipt } from
 import type { Stats } from '../types';
 import type { ReactNode } from 'react';
 import api from '../api/axios';
+import { PlanUsageWidget } from '../components/PlanUsageWidget';
 
 const adjustDateForTimezone = (date: Date | string | null): Date | null => {
   if (!date) return null;
@@ -36,7 +37,7 @@ const StatCard = ({ title, value, formatAsCurrency = false, icon: Icon, color }:
   );
 };
 
-const ChartTooltip = ({ label, payload }: { label: ReactNode; payload: { name: string; value: number; color: string; }[] | undefined }) => {
+const ChartTooltip = ({ label, payload }: { label: ReactNode; payload: readonly { name: string; value: number; color: string; }[] | undefined }) => {
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -199,57 +200,65 @@ function DashboardPage() {
         )}
       </SimpleGrid>
 
-      {can('quotes.view') && stats.quotesOverTime.length > 0 && (
+      <SimpleGrid cols={{ base: 1, md: 1 }}>
+        {can('quotes.view') && stats.quotesOverTime.length > 0 && (
           <Paper withBorder p="md" radius="md" shadow="sm">
             <Title order={5} mb="md">Evolução de Orçamentos</Title>
             <AreaChart h={300} data={stats.quotesOverTime} dataKey="date" series={[{ name: 'count', color: 'blue.6', label: 'Quantidade' }]} curveType="monotone" xAxisProps={{ tick: { fill: chartTextColor, fontSize: 12 } }} yAxisProps={{ tick: { fill: chartTextColor, fontSize: 12 } }} tooltipProps={{ content: ({ label, payload }) => <ChartTooltip label={label} payload={payload} /> }} gridAxis="xy" />
           </Paper>
-      )}
-    
-      {(can('stock.manage') && lowStockProducts.length > 0) || (can('quotes.view') && staleQuotes.length > 0) ? (
-        <Paper withBorder p="md" radius="md" shadow="sm" bg="var(--mantine-color-body)">
-          <Group mb="md">
-            <IconAlertTriangle color="orange" />
-            <Title order={5}>Pontos de Atenção</Title>
-          </Group>
-          
-          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-            {can('stock.manage') && lowStockProducts.length > 0 && (
-                <div>
-                    <Text fw={500} size="sm" mb="xs" c="dimmed">Estoque Baixo</Text>
-                    <List spacing="xs" size="sm" center icon={ <ThemeIcon color="red" size={20} radius="xl"><IconAlertTriangle size={12} /></ThemeIcon> }>
-                    {lowStockProducts.map(product => (
-                        <List.Item key={product.id}>
-                        <Group justify="space-between">
-                            <Text>{product.name}</Text>
-                            <Text c="red" fw={700}>{product.quantity_in_stock} un.</Text>
-                        </Group>
-                        </List.Item>
-                    ))}
-                    </List>
-                </div>
-            )}
+        )}
+      </SimpleGrid>
 
-            {can('quotes.view') && staleQuotes.length > 0 && (
+      <SimpleGrid cols={{ base: 1, md: 2 }}>
+        {(can('stock.manage') && lowStockProducts.length > 0) || (can('quotes.view') && staleQuotes.length > 0) ? (
+          <Paper withBorder p="md" radius="md" shadow="sm" bg="var(--mantine-color-body)">
+            <Group mb="md">
+              <IconAlertTriangle color="orange" />
+              <Title order={5}>Pontos de Atenção</Title>
+            </Group>
+            
+            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+              {can('stock.manage') && lowStockProducts.length > 0 && (
                 <div>
-                    <Text fw={500} size="sm" mb="xs" c="dimmed">Orçamentos Parados (+7 dias)</Text>
-                    <List spacing="xs" size="sm" center icon={ <ThemeIcon color="orange" size={20} radius="xl"><IconClockHour4 size={12} /></ThemeIcon> }>
-                    {staleQuotes.map(quote => (
-                       <List.Item key={quote.id}>
+                  <Text fw={500} size="sm" mb="xs" c="dimmed">Estoque Baixo</Text>
+                  <List spacing="xs" size="sm" center icon={ <ThemeIcon color="red" size={20} radius="xl"><IconAlertTriangle size={12} /></ThemeIcon> }>
+                    {lowStockProducts.map(product => (
+                      <List.Item key={product.id}>
                         <Group justify="space-between">
-                          <Text lineClamp={1} style={{flex: 1}}>
-                            {quote.customer.name} ({differenceInDays(new Date(), new Date(quote.created_at))} dias)
-                          </Text>
+                          <Text>{product.name}</Text>
+                          <Text c="red" fw={700}>{product.quantity_in_stock} un.</Text>
+                        </Group>
+                      </List.Item>
+                    ))}
+                  </List>
+                </div>
+              )}
+
+              {can('quotes.view') && staleQuotes.length > 0 && (
+                <div>
+                  <Text fw={500} size="sm" mb="xs" c="dimmed">Orçamentos Parados (+7 dias)</Text>
+                  <List spacing="xs" size="sm" center icon={ <ThemeIcon color="orange" size={20} radius="xl"><IconClockHour4 size={12} /></ThemeIcon> }>
+                    {staleQuotes.map(quote => (
+                      <List.Item key={quote.id}>
+                        <Group justify="space-between">
+                          <Text lineClamp={1} style={{flex: 1}}>{quote.customer.name} ({differenceInDays(new Date(), new Date(quote.created_at))} dias)</Text>
                           <Button component={Link} to={`/quotes/${quote.id}`} size="compact-xs" variant="subtle">Ver</Button>
                         </Group>
                       </List.Item>
                     ))}
-                    </List>
+                  </List>
                 </div>
-            )}
-          </SimpleGrid>
-        </Paper>
-      ) : null}
+              )}
+            </SimpleGrid>
+          </Paper>
+        ) : null}
+        
+        {can('settings.manage') && (
+          <Stack>
+            <PlanUsageWidget />
+          </Stack>
+        )}
+      </SimpleGrid>
     </Stack>
   </Container>
   );

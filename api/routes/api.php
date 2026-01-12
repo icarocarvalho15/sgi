@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\AccountPayableController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ReceivableInstallmentController;
 use App\Http\Controllers\Api\ProductComponentController;
+use App\Http\Controllers\Api\TenantController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -114,5 +115,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/realized-cash-flow', [ReportController::class, 'realizedCashFlow']);
 
     Route::post('/receivable-installments/{installment}/register-payment', [ReceivableInstallmentController::class, 'registerPayment']);
-
+    
+    Route::get('/tenant/plan-usage', [TenantController::class, 'usage']);
 });

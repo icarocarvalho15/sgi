@@ -9,3 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('app:update-overdue-status')->dailyAt('01:00');
+//Schedule::command('backup:clean')->daily()->at('01:00');
+//Schedule::command('backup:run --only-db')->daily()->at('01:30');

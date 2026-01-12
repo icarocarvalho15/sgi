@@ -19,7 +19,7 @@ class ProductPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('products.create');
+        return $user->can('products.create') && $user->tenant->canCreate('product');
     }
 
     public function update(User $user, Product $product): bool

@@ -20,7 +20,7 @@ class CustomerPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('customers.create');
+        return $user->can('customers.create') && $user->tenant->canCreate('customer');
     }
 
     public function update(User $user, Customer $customer): bool

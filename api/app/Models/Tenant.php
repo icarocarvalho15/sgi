@@ -52,6 +52,11 @@ class Tenant extends Model
         return $this->hasMany(Product::class);
     }
 
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
+
     public function hasReachedLimit($limitType, $currentCount)
     {
         if (!$this->plan) return false;
@@ -70,6 +75,7 @@ class Tenant extends Model
         $limits = [
             'user' => 'max_users',
             'product' => 'max_products',
+            'customer' => 'max_customers',
         ];
 
         if (!array_key_exists($resource, $limits)) return true;
@@ -82,6 +88,7 @@ class Tenant extends Model
         $currentCount = match ($resource) {
             'user' => $this->users()->count(),
             'product' => $this->products()->count(),
+            'customer' => $this->customers()->count(),
             default => 0,
         };
 

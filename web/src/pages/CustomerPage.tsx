@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import type { Customer } from '../types';
 import { CustomerForm } from '../components/CustomerForm';
 import api from '../api/axios';
+import { usePlanLimiter } from '../hooks/usePlanLimiter';
 
 const formatDocument = (doc: string = '') => {
   const cleaned = doc.replace(/\D/g, '');
@@ -34,6 +35,7 @@ function CustomerPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const { canCreate } = usePlanLimiter();
   
   const fetchCustomers = useCallback((page: number, search: string) => {
     api.get('/customers', { params: { page, search } }).then(response => {
@@ -123,6 +125,14 @@ function CustomerPage() {
       <Group>
         {can('customers.view') && (<Button onClick={handleExport} loading={isExporting} color="green" leftSection={<IconFileExport size={16} />}>Exportar</Button>)}
         {can('customers.create') && (<Button onClick={handleOpenCreateModal} leftSection={<IconPlus size={16} />}>Adicionar Cliente</Button>)}
+        {can('customers.create') && (
+          canCreate('customers') ? (<Button onClick={handleOpenCreateModal} leftSection={<IconPlus size={16} />}>Novo Cliente</Button>
+          ) : (
+            <Tooltip label="Limite de clientes atingido. Contate o administrador.">
+              <Button disabled data-disabled leftSection={<IconPlus size={16} />}>Novo Cliente</Button>
+            </Tooltip>
+          )
+        )}
       </Group>
     </Group>
     <TextInput label="Buscar Cliente" placeholder="Digite o nome, documento ou e-mail..." value={searchTerm} onChange={(event) => setSearchTerm(event.currentTarget.value)} leftSection={<IconSearch size={16} />} mb="md" />

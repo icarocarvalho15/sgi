@@ -16,6 +16,7 @@ class Plan extends Model
         'price',
         'max_users',
         'max_products',
+        'max_customers',
         'max_storage_mb',
         'is_active',
         'is_popular',

@@ -23,7 +23,8 @@ class TenantController extends Controller
         $plan = $tenant->plan;
 
         $usersCount = $tenant->users()->count();
-        $productsCount = $tenant->products()->count(); 
+        $productsCount = $tenant->products()->count();
+        $customersCount = $tenant->customers()->count(); 
         
         $calculatePercent = function ($current, $max) {
             if ($max === -1) return 0;
@@ -48,7 +49,14 @@ class TenantController extends Controller
                     'max' => $plan->max_products,
                     'percent' => $calculatePercent($productsCount, $plan->max_products),
                     'is_unlimited' => $plan->max_products === -1,
-                ]
+                ],
+                'customers' => [
+                    'label' => 'Clientes',
+                    'current' => $customersCount,
+                    'max' => $plan->max_customers,
+                    'percent' => $calculatePercent($customersCount, $plan->max_customers),
+                    'is_unlimited' => $plan->max_customers === -1,
+                ],
             ]
         ]);
     }

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->decimal('price', 10, 2);
             $table->integer('max_users')->default(1);
             $table->integer('max_products')->default(50);
+            $table->integer('max_customers')->default(100);
             $table->integer('max_storage_mb')->default(100);
             $table->boolean('is_active')->default(true);
             $table->boolean('is_popular')->default(false);

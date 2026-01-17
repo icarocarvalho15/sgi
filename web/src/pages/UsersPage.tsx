@@ -6,6 +6,7 @@ import { IconPencil, IconTrash, IconPlus } from '@tabler/icons-react';
 import api from '../api/axios';
 import { notifications } from '@mantine/notifications';
 import type { User, Role, SelectOption } from '../types';
+import { usePlanLimiter } from '../hooks/usePlanLimiter';
 
 const formatPhone = (phone: string = '') => {
   const cleaned = phone.replace(/\D/g, '').substring(0, 11);
@@ -23,6 +24,7 @@ function UsersPage() {
     const [activePage, setActivePage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [roleOptions, setRoleOptions] = useState<SelectOption[]>([]);
+    const { canCreate } = usePlanLimiter();
     
     const fetchUsers = useCallback((page: number) => {
         api.get('/users', { params: { page } }).then(response => {
@@ -156,7 +158,13 @@ function UsersPage() {
             
             <Group justify="space-between" my="lg">
                 <Title order={1}>Gestão de Usuários</Title>
-                <Button onClick={handleOpenCreateModal} leftSection={<IconPlus size={16} />}>Adicionar Usuário</Button>
+                {canCreate('users') ? (
+                    <Button onClick={handleOpenCreateModal} leftSection={<IconPlus size={16} />}>Adicionar Usuário</Button>
+                ) : (
+                    <Tooltip label="Limite do plano atingido">
+                        <Button disabled data-disabled leftSection={<IconPlus size={16} />}>Adicionar Usuário</Button>
+                    </Tooltip>
+                )}
             </Group>
 
             <Table>

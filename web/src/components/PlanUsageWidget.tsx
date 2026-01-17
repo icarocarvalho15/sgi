@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Paper, Text, Group, RingProgress, Center, Stack, ThemeIcon, Loader, Badge, Button } from '@mantine/core';
-import { IconUser, IconPackage, IconCrown, IconBrandWhatsapp } from '@tabler/icons-react';
+import { IconUser, IconPackage, IconCrown, IconBrandWhatsapp, IconUsers } from '@tabler/icons-react';
 import api from '../api/axios';
 
 interface UsageItem {
@@ -17,6 +17,7 @@ interface PlanData {
     features: {
         users: UsageItem;
         products: UsageItem;
+        customers: UsageItem;
     };
 }
 
@@ -79,6 +80,7 @@ export function PlanUsageWidget() {
         <Stack gap="xl" mb={isCritical ? 'md' : 0}>
             {renderRing(data.features.users, <IconUser size={20} />, 'blue')}
             {renderRing(data.features.products, <IconPackage size={20} />, 'teal')}
+            {renderRing(data.features.customers, <IconUsers size={20} />, 'grape')}
         </Stack>
         
         {isCritical && (

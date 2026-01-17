@@ -7,6 +7,7 @@ import { IconPencil, IconTrash, IconPlus, IconSearch, IconUpload, IconCategory, 
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import type { Product, Category, SelectOption, ProductFormData, ProductComponent } from '../types';
+import { usePlanLimiter } from '../hooks/usePlanLimiter';
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -97,6 +98,7 @@ function ProductPage() {
     const [categoryModalOpened, { open: openCategoryModal, close: closeCategoryModal }] = useDisclosure(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    const { canCreate } = usePlanLimiter();
 
     const categoryForm = useForm({
         initialValues: { name: '', description: '' },
@@ -343,6 +345,14 @@ function ProductPage() {
                     {can('products.view') && (<Button onClick={handleExport} loading={isExporting} color="green" leftSection={<IconFileExport size={16} />}>Exportar</Button>)}
                     {can('categories.manage') && (<Button variant="default" onClick={handleOpenCreateCategoryModal} leftSection={<IconCategory size={16} />}>Gerenciar Categorias</Button>)}
                     {can('products.create') && (<Button onClick={handleOpenCreateModal} leftSection={<IconPlus size={16} />}>Adicionar Novo Item</Button>)}
+                    {can('products.create') && (
+                        canCreate('products') ? (<Button onClick={handleOpenCreateModal} leftSection={<IconPlus size={16} />}>Adicionar Novo Item</Button>
+                        ) : (
+                        <Tooltip label="Limite de produtos do plano atingido. Faça upgrade para continuar." withArrow>
+                            <Button disabled data-disabled leftSection={<IconPlus size={16} />}>Adicionar Novo Item</Button>
+                        </Tooltip>
+                        )
+                    )}
                 </Group>
             </Group>
 

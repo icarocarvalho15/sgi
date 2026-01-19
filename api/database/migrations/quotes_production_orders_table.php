@@ -13,7 +13,7 @@ return new class extends Migration
             $table->boolean('is_custom_item')->default(false);
             $table->foreignId('tenant_id')->constrained('tenants')->onDelete('cascade');
             $table->unsignedBigInteger('internal_id')->nullable();
-            $table->foreignId('quote_id')->unique()->constrained()->onDelete('cascade');
+            $table->foreignId('quote_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('restrict');
             $table->foreignId('customer_id')->constrained()->onDelete('restrict');
             $table->foreignId('status_id')->nullable()->constrained('production_statuses')->onDelete('set null');

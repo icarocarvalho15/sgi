@@ -1,4 +1,6 @@
-# SGI Drav Dev - Plataforma SaaS Multi-Tenant (v1.5)
+# SGI Drav Dev - Plataforma SaaS Multi-Tenant (v1.8)
+
+![Badge Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow) ![Badge Version](https://img.shields.io/badge/Versão-1.8-blue) ![Badge Tech](https://img.shields.io/badge/Stack-Laravel_%2B_React-red)
 
 **Um ERP/CRM de Manufatura e Serviços projetado para escalar.**
 
@@ -14,23 +16,22 @@ O diferencial deste projeto reside nas soluções de arquitetura de software imp
 - **Isolamento Lógico (The Wall):** Implementação de `Global Scopes` automáticos em todos os Models. O sistema aplica filtros de segurança (`WHERE tenant_id = X`) em 100% das consultas, garantindo que os dados de uma empresa sejam invisíveis para outras.
 - **Segurança de Fábrica:** Policies e Gates garantem que usuários só acessem recursos do seu próprio tenant.
 
-### 2. 🔢 IDs Sequenciais por Tenant
+### 2. 🕵️‍♂️ Auditoria e Rastreabilidade (Novo na v1.8)
+- **Logs de Atividades Granulares:** Integração profunda com *Events* e *Listeners* para monitorar alterações críticas.
+- **Inteligência de Contexto:** O sistema distingue entre uma edição manual ("Usuário alterou estoque") e uma automação de sistema ("Baixa automática por Conclusão de Produção"), exibindo etiquetas visuais distintas para fácil leitura.
+- **Blindagem de Dados:** Tratamento de *race conditions* para evitar duplicidade de logs em operações automáticas.
+
+### 3. 🔢 IDs Sequenciais por Tenant
 - Diferente de sistemas tradicionais que expõem IDs globais do banco de dados (ex: Orçamento #4592), o SGI implementa uma lógica de **numeração sequencial isolada**.
 - A Empresa A tem o **"Orçamento Nº 1"**. A Empresa B também tem o seu **"Orçamento Nº 1"**.
-- Aplicado em: Clientes, Produtos, Orçamentos, Ordens de Produção e Contas a Pagar.
 
-### 3. 🧪 Engenharia de Produto (Bill of Materials)
+### 4. 🧪 Engenharia de Produto (Bill of Materials)
 - Suporte para produtos do tipo **"Serviço"** com **Composição (Receita)**.
 - O sistema permite definir que 1 unidade do serviço "Impressão A3" consome X unidades da matéria-prima "Papel A3" e Y unidades de "Tinta".
 
-### 4. 🤖 Automação de Estoque Inteligente
-- Baixa de estoque automatizada baseada em eventos (`ProductionStarted`).
-- Quando a Produção altera o status de um pedido para **"Em Produção"**, o sistema calcula a receita e deduz automaticamente as matérias-primas do estoque.
-
-### 5. 👁️ O "Painel de Deus" (Super Admin)
-- Painel administrativo exclusivo (construído com **Laravel Filament**) para a Drav Dev.
-- Gerenciamento centralizado de **Empresas (Tenants)**, **Planos de Assinatura** e **Usuários Globais**.
-- Dashboard com KPIs de saúde da plataforma (Total de Clientes, MRR, etc.) e preenchimento automático de dados via CNPJ.
+### 5. 🤖 Automação de Estoque Inteligente
+- **Baixa na Conclusão:** A dedução de estoque ocorre no momento exato da conclusão da Ordem de Produção (`production_finished`), garantindo que o custo só seja contabilizado quando o produto está pronto.
+- **Histórico (Kardex):** Registro imutável de todas as movimentações (Entradas, Vendas, Perdas e Produção).
 
 ---
 
@@ -39,24 +40,21 @@ O diferencial deste projeto reside nas soluções de arquitetura de software imp
 ### 📊 Dashboard & Analytics
 - Interface moderna com **Modo Escuro (Dark Mode)** automático.
 - Gráficos de funil de vendas, status de produção e faturamento.
-- Alertas inteligentes de **Estoque Baixo** e **Orçamentos Parados**.
+
+### 🛡️ Módulo de Auditoria (Segurança)
+- Timeline visual estilo "banco" para acompanhar quem fez o quê.
+- Tradução de campos técnicos (`sale_price`) para linguagem humana ("Preço de Venda").
+- Visualização de "Antes e Depois" para alterações de valores.
 
 ### 📝 Orçamentos (CRM) & Kanban
-- **Gestão Visual (Kanban):** Quadro interativo com *Drag & Drop* para mover orçamentos entre status (Aberto -> Negociação -> Aprovado) com validação automática de regras de negócio.
-- Criação rápida com cálculo automático de lucro e descontos.
+- **Gestão Visual (Kanban):** Quadro interativo com *Drag & Drop*.
 - Geração de **PDFs Profissionais** instantâneos com a marca da empresa cliente.
-- Envio direto para WhatsApp e E-mail.
+- Envio direto para WhatsApp.
 
 ### 🏭 Produção & Chão de Fábrica
 - Transformação automática de Orçamentos aprovados em **Ordens de Produção**.
 - Controle de status (Pendente -> Em Produção -> Concluído).
-- Geração de **Ordem de Serviço** (interna) e **Protocolo de Entrega** (cliente) em PDF.
-- Visualização clara da "Receita" (materiais necessários) para cada item.
-
-### 💰 Financeiro
-- **Contas a Receber:** Geração automática baseada nas condições de pagamento do orçamento.
-- **Contas a Pagar:** Controle de despesas operacionais.
-- Relatórios de Fluxo de Caixa (Previsto vs. Realizado).
+- Geração de **Ordem de Serviço** (interna) e **Protocolo de Entrega** (cliente).
 
 ---
 
@@ -82,6 +80,10 @@ O diferencial deste projeto reside nas soluções de arquitetura de software imp
 *Visualização dos orçamentos usando a metodologia japonesa.*
 ![Visualização em Kanban](docs/images/4.png)
 
+### Controle de Produção
+*Listagem de ordens com identificação clara dos itens.*
+![Lista de Produção](docs/images/14.png)
+
 ### Engenharia de Produto
 *Definição da composição (receita) de um serviço.*
 ![Criação de Produtos](docs/images/5.png)
@@ -90,6 +92,10 @@ O diferencial deste projeto reside nas soluções de arquitetura de software imp
 ### Gerenciamento de Estoque
 *Controle de entrada e saída de produtos do estoque.*
 ![Movimentação de Estoque](docs/images/7.png)
+
+### Histórico de Estoque (Kardex)
+*Transparência total na movimentação de materiais.*
+![Kardex](docs/images/13.png)
 
 ### Produção e PDFs
 *Controle de produção e documentos gerados.*
@@ -100,11 +106,15 @@ O diferencial deste projeto reside nas soluções de arquitetura de software imp
 ![Fluxo de Caixa](docs/images/10.png)
 ![Controle de Pagamentos](docs/images/11.png)
 
+### Auditoria e Logs (Destaque v1.8)
+*Rastreabilidade completa com distinção visual de eventos automáticos.*
+![Auditoria Detalhada](docs/images/12.png)
+
 ---
 
 ## 🔮 Roadmap de Futuras Melhorias (Plataforma v2.0)
 
-Com a fundação Multi-Tenant (v1.5) concluída, o roadmap se concentra em escalar o produto:
+Com a fundação Multi-Tenant (v1.8) concluída, o roadmap se concentra em escalar o produto:
 
 - **Testes Automatizados (A Rede de Segurança):**
   - Expandir a cobertura de testes (com Pest) para todos os módulos, garantindo a estabilidade da plataforma para todos os tenants a cada nova atualização.
@@ -123,21 +133,20 @@ O projeto utiliza uma stack moderna e robusta, focada em performance e manutenib
 
 **Backend (API RESTful)**
 - **Framework:** Laravel 11 (PHP 8.3)
-- **Admin Panel:** Filament 3 (para o Super Admin)
-- **Auth:** Laravel Sanctum (Tokens seguros)
-- **PDFs:** `barryvdh/laravel-dompdf`
+- **Admin Panel:** Filament 3
+- **Auditoria:** Spatie Activity Log
+- **Auth:** Laravel Sanctum
+- **PDFs:** DomPDF
 - **Banco de Dados:** MySQL 8
 
 **Frontend (SPA)**
 - **Framework:** React 18 (Vite)
 - **Linguagem:** TypeScript
-- **UI Kit:** Mantine UI v7 (Componentes, Hooks, Notifications)
-- **Charts:** Recharts / Mantine Charts
-- **State Management:** React Context API + Hooks Customizados
+- **UI Kit:** Mantine UI v7
 - **HTTP Client:** Axios
 
 - **Ambiente:**
-  - Laragon (para Windows)
+  - WSL + Docker (Windows 10 IoT Enterprise LTSC 21H2)
   - Git & GitHub (Versionamento)
 
 ---
@@ -152,7 +161,7 @@ O projeto utiliza uma stack moderna e robusta, focada em performance e manutenib
 
 1.  **Clonar o Repositório:**
     ```bash
-    git clone [https://github.com/Bakaluke/sgi.git](https://github.com/Bakaluke/sgi.git)
+    git clone [https://github.com/icarocarvalho15/sgi.git](https://github.com/icarocarvalho15/sgi.git)
     cd sgi
     ```
 
@@ -188,4 +197,4 @@ O projeto utiliza uma stack moderna e robusta, focada em performance e manutenib
 
 Este projeto foi desenvolvido com dedicação pela **Drav Dev** como parte do nosso portfólio de soluções de software customizadas. Ele demonstra nossa capacidade de construir aplicações full-stack complexas, seguras e com foco na experiência do usuário.
 
-*v1.5 - Release "Multi-Tenant & Automation"*
+*v1.8 - Release "Audit Logs"*

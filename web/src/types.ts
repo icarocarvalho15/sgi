@@ -391,3 +391,16 @@ export interface CashFlowData {
   'A Receber': number;
   'A Pagar': number;
 }
+
+export interface LogActivity {
+  id: number;
+  description: string;
+  created_at: string;
+  causer?: { name: string; };
+  subject?: { name?: string; };
+  event: string;
+  properties?: {
+    attributes?: any;
+    old?: any;
+  };
+}

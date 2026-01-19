@@ -27,6 +27,7 @@ class ProductionOrder extends Model
         'notes',
         'cancellation_reason',
         'materials_deducted_at',
+        'product_name',
     ];
 
     protected function casts(): array

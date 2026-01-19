@@ -8,6 +8,7 @@ use App\Models\ProductionStatus;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CreateProductionOrder
 {
@@ -19,7 +20,7 @@ class CreateProductionOrder
     public function handle(QuoteApproved $event): void
     {
         $quote = $event->quote;
-        
+
         if (ProductionOrder::where('quote_id', $quote->id)->exists()) {
             return;
         }
@@ -31,6 +32,12 @@ class CreateProductionOrder
             return;
         }
 
+        $itemNames = $quote->items->map(function ($item) {
+            return $item->product_name ?? ($item->product ? $item->product->name : 'Item');
+        })->join(', ');
+
+        $productSummary = Str::limit($itemNames, 250);
+
         ProductionOrder::create([
             'tenant_id' => $quote->tenant_id,
             'quote_id' => $quote->id,
@@ -39,6 +46,8 @@ class CreateProductionOrder
             'status_id' => $pendingStatus->id,
             'due_date' => $quote->delivery_datetime,
             'notes' => $quote->notes,
+            'product_name' => $productSummary ?: 'Orçamento #' . $quote->id,
+            'quantity' => 1, 
         ]);
     }
 }

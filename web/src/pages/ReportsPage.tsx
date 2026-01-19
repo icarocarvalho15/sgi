@@ -6,6 +6,7 @@ import { SalesByPeriodReport } from '../components/reports/SalesByPeriodReport';
 import { SalesByCustomerReport } from '../components/reports/SalesByCustomerReport';
 import { ItemsSoldByDayReport } from '../components/reports/ItemsSoldByDayReport';
 import { CashFlowReport } from '../components/reports/CashFlowReport';
+import { AuditTab } from '../components/reports/AuditTab';
 
 const adjustDateForTimezone = (date: Date | string | null): Date | null => {
     if (!date) return null;
@@ -48,6 +49,7 @@ function ReportsPage() {
                     <Tabs.Tab value="by_customer">Vendas por Cliente</Tabs.Tab>
                     <Tabs.Tab value="items_sold">Itens Vendidos</Tabs.Tab>
                     <Tabs.Tab value="cash_flow">Fluxo de Caixa</Tabs.Tab>
+                    <Tabs.Tab value="audit">Auditoria</Tabs.Tab>
                 </Tabs.List>
 
                 <Tabs.Panel value="summary" pt="xs">
@@ -64,6 +66,10 @@ function ReportsPage() {
                 
                 <Tabs.Panel value="cash_flow" pt="xs">
                     <CashFlowReport />
+                </Tabs.Panel>
+
+                <Tabs.Panel value="audit" pt="xs">
+                    <AuditTab />
                 </Tabs.Panel>
             </Tabs>
         </Container>

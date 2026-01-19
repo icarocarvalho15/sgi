@@ -10,6 +10,7 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\Customer;
 use App\Models\User;
+use App\Models\Product;
 use App\Models\ProductionOrder;
 use App\Models\ProductionStatus;
 use Illuminate\Http\Request;
@@ -64,46 +65,98 @@ class ProductionOrderController extends Controller
         if (in_array($productionOrder->status?->name, ['Cancelado', 'Concluído'])) {
             abort(403, 'Ordens finalizadas ou canceladas não podem ser modificadas.');
         }
-        
         $this->authorize('update', $productionOrder);
 
         $oldStatusName = $productionOrder->status?->name;
 
         $statusValidation = $request->validate(['status_id' => 'required|exists:production_statuses,id']);
-
         $newStatus = ProductionStatus::find($statusValidation['status_id']);
 
         if ($newStatus && $newStatus->name === 'Cancelado') {
-            $validated = $request->validate([
+             $validated = $request->validate([
                 'status_id' => 'required|exists:production_statuses,id',
                 'cancellation_reason' => 'required|string|max:500',
             ]);
         } else {
-            $validated = $request->validate([
-                'status_id' => 'required|exists:production_statuses,id',
-            ]);
+             $validated = $request->validate(['status_id' => 'required|exists:production_statuses,id']);
         }
 
         $productionOrder->update($validated);
-        
         $productionOrder->refresh();
-        
         $newStatusName = $productionOrder->status?->name;
 
-        if ($newStatusName === 'Concluído' && is_null($productionOrder->completed_at)) {
+        if ($newStatusName === 'Concluído' && is_null($productionOrder->materials_deducted_at)) {
+            
             $productionOrder->completed_at = now();
+            $productionOrder->materials_deducted_at = now();
             $productionOrder->saveQuietly();
+
+            if ($productionOrder->quote && $productionOrder->quote->items) {
+                $productionOrder->load('quote.items.product.components.component');
+
+                foreach ($productionOrder->quote->items as $item) {
+                    if (!$item->product) continue;
+
+                    if ($item->product->isService() && $item->product->components->isNotEmpty()) {
+                        foreach ($item->product->components as $component) {
+                            $ingredient = $component->component;
+                            
+                            if ($ingredient) {
+                                $qtyNeeded = $item->quantity * $component->quantity_used;
+                                $this->deductStock($ingredient, $qtyNeeded, $productionOrder, $item->product_name);
+                            }
+                        }
+                    }
+                    
+                    elseif ($item->product->isProduct()) {
+                         $this->deductStock($item->product, $item->quantity, $productionOrder, $item->product_name);
+                    }
+                }
+            }
         }
 
         if ($oldStatusName !== 'Concluído' && $newStatusName === 'Concluído') {
             OrderCompleted::dispatch($productionOrder);
         }
-
         if ($oldStatusName !== 'Em Produção' && $newStatusName === 'Em Produção') {
             ProductionStarted::dispatch($productionOrder);
         }
 
         return $productionOrder->load(['customer', 'user', 'quote.items.product', 'status']);
+    }
+
+    private function deductStock($product, $quantity, $order, $itemName)
+    {
+        $oldStock = $product->quantity_in_stock;
+        $newStock = $oldStock - $quantity;
+
+        $movement = new StockMovement();
+        $movement->fill([
+            'tenant_id'  => $order->tenant_id,
+            'product_id' => $product->id,
+            'quantity'   => -$quantity,
+            'type'       => 'Saída por Produção',
+            'notes'      => "Baixa p/ O.P. #{$order->internal_id} (Item: {$itemName})",
+        ]);
+        $movement->saveQuietly();
+        
+        $product->quantity_in_stock = $newStock;
+        
+        if (method_exists($product, 'disableLogging')) {
+            $product->disableLogging();
+        }
+        
+        $product->saveQuietly(); 
+
+        activity()
+            ->performedOn($product)
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'attributes' => ['quantity_in_stock' => $newStock],
+                'old' => ['quantity_in_stock' => $oldStock]
+            ])
+            ->event('production_finished') 
+            ->log("Baixa automática: O.P. #{$order->internal_id} Concluída");
     }
 
     public function destroy(ProductionOrder $productionOrder)

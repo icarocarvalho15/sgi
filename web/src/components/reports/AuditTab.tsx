@@ -7,16 +7,38 @@ import { ptBR } from 'date-fns/locale';
 import type { LogActivity } from '../../types';
 
 const FIELD_LABELS: Record<string, string> = {
+    // Produtos
     sale_price: 'Preço de Venda',
     price: 'Preço',
+    sku: 'Código',
+    category_id: 'Categoria',
     cost_price: 'Preço de Custo',
     name: 'Nome',
     description: 'Descrição',
-    quantity_in_stock: 'Estoque',
-    stock_quantity: 'Estoque',
-    email: 'E-mail',
-    phone: 'Telefone',
+    quantity_in_stock: 'Estoque Atual',
+    stock_quantity: 'Estoque Atual',
+    quantity: 'Estoque',
     active: 'Ativo',
+    image_path: 'Imagem',
+
+    // Clientes e Endereços
+    type: 'Tipo',
+    legal_name: 'Nome Fantasia',
+    email: 'E-mail',
+    phone: 'Telefone / WhatsApp',
+    document: 'CPF / CNPJ',
+    street: 'Rua',
+    number: 'Número',
+    neighborhood: 'Bairro',
+    complement: 'Complemento',
+    city: 'Cidade',
+    state: 'Estado',
+    cep: 'CEP',
+    notes: 'Observações',
+
+    // Genéricos
+    created_at: 'Data de Criação',
+    updated_at: 'Data de Atualização',
 };
 
 export function AuditTab() {
@@ -29,20 +51,34 @@ export function AuditTab() {
         .catch(err => console.error(err))
         .finally(() => setLoading(false));
     }, []);
+
+    const formatPhone = (v: string) => {
+        const r = v.replace(/\D/g, "");
+        if (r.length > 10) {
+            return r.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
+        } else if (r.length > 5) {
+            return r.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+        } else if (r.length > 2) {
+            return r.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2");
+        } else {
+            return v;
+        }
+    };
     
     const formatValue = (key: string, value: any) => {
-        if (value === null || value === undefined) return <em>Vazio</em>;
-        
+        if (value === null || value === undefined || value === '') return <em>Vazio</em>;        
         if (['price', 'sale_price', 'cost_price'].includes(key)) {
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value));
         }
-        
+        if (key === 'phone') {
+            return formatPhone(String(value));
+        }
         if (typeof value === 'boolean' || key === 'active') {
             return value ? <Badge color="green">Sim</Badge> : <Badge color="red">Não</Badge>;
         }
-        
         return String(value);
     };
+
     const renderChanges = (attributes: any, old?: any) => {
         return Object.entries(attributes).map(([key, newValue]) => {
             if (['updated_at', 'created_at', 'id', 'tenant_id'].includes(key)) return null;
@@ -55,11 +91,11 @@ export function AuditTab() {
                 <Text size="sm" fw={600} c="dimmed">• {label}:</Text>
                 {oldValue && (
                     <>
-                        <Text size="sm" td="line-through" c="gray.5">{formatValue(key, oldValue)}</Text>
+                        <Text size="sm" td="line-through" c="gray.5" lineClamp={1} style={{ maxWidth: 150 }}>{formatValue(key, oldValue)}</Text>
                         <IconArrowRight size={12} color="gray" />
                     </>
                 )}
-                <Text size="sm" fw={600} c="dark">{formatValue(key, newValue)}</Text>
+                <Text size="sm" fw={600} c="dark" lineClamp={2}>{formatValue(key, newValue)}</Text>
             </Group>
             );
         });
@@ -90,23 +126,16 @@ export function AuditTab() {
                         {log.event === 'deleted' && <Badge size="sm" color="red">Deletou</Badge>}
                         {log.event === 'created' && <Badge size="sm" color="green">Criou</Badge>}
                         {log.event === 'updated' && <Badge size="sm" color="blue">Editou</Badge>}
-                        {log.event === 'production_finished' && (
-                            <Badge size="sm" variant="filled" color="teal">Conclusão de Produção</Badge>
-                        )}
-                        {log.subject?.name && (
-                            <Text size="sm" c="dimmed">o item <b>{log.subject.name}</b></Text>
-                        )}
+                        {log.event === 'production_finished' && <Badge size="sm" variant="filled" color="teal">Conclusão de Produção</Badge>}
+                        {log.subject?.name && <Text size="sm" c="dimmed">o item <b>{log.subject.name}</b></Text>}
                     </Group>
                 }>
-                    <Text c="dimmed" size="xs" mb={4}>
-                        {format(new Date(log.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
-                    </Text>
-                    
+                    <Text c="dimmed" size="xs" mb={4}>{format(new Date(log.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}</Text>
                     {log.properties?.attributes && (
-                        <Paper bg="gray.0" p="xs" radius="md" withBorder style={{ borderColor: 'var(--mantine-color-gray-3)' }}>
-                            {renderChanges(log.properties.attributes, log.properties.old)}
-                        </Paper>
-                    )}
+                    <Paper bg="gray.0" p="xs" radius="md" withBorder style={{ borderColor: 'var(--mantine-color-gray-3)' }}>
+                        {renderChanges(log.properties.attributes, log.properties.old)}
+                    </Paper>
+                )}
                 </Timeline.Item>
             ))}
         </Timeline>

@@ -36,9 +36,29 @@ const FIELD_LABELS: Record<string, string> = {
     cep: 'CEP',
     notes: 'Observações',
 
+    // Contas
+    total_amount: 'Valor Total',
+    paid_amount: 'Valor Pago',
+    value: 'Valor Original',
+    due_date: 'Vencimento',
+    paid_at: 'Data do Pagamento',
+    payment_date: 'Data do Pagamento',
+    pending: 'Pendente',
+    partially_paid: 'Pago Parcialmente',
+    
     // Genéricos
+    status: 'Status',
     created_at: 'Data de Criação',
     updated_at: 'Data de Atualização',
+    cancellation_reason: 'Motivo do Cancelamento',
+};
+
+const STATUS_TRANSLATIONS: Record<string, any> = {
+    pending: <Badge color="yellow" size="sm">Pendente</Badge>,
+    paid: <Badge color="green" size="sm">Pago</Badge>,
+    partially_paid: <Badge color="blue" size="sm">Parcialmente Pago</Badge>,
+    overdue: <Badge color="red" size="sm">Atrasado</Badge>,
+    canceled: <Badge color="gray" size="sm">Cancelado</Badge>,
 };
 
 export function AuditTab() {
@@ -64,14 +84,30 @@ export function AuditTab() {
             return v;
         }
     };
+
+    const formatDocument = (v: string) => {
+        const r = v.replace(/\D/g, "");
+        if (r.length > 11) {
+            return r.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2}).*/, "$1.$2.$3/$4-$5");
+        }
+        else {
+            return r.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4");
+        }
+    };
     
     const formatValue = (key: string, value: any) => {
         if (value === null || value === undefined || value === '') return <em>Vazio</em>;        
-        if (['price', 'sale_price', 'cost_price'].includes(key)) {
+        if (['price', 'sale_price', 'cost_price','total_amount', 'paid_amount', 'value'].includes(key)) {
             return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value));
         }
         if (key === 'phone') {
             return formatPhone(String(value));
+        }
+        if (key === 'document') {
+            return formatDocument(String(value));
+        }
+        if (key === 'status') {
+            return STATUS_TRANSLATIONS[String(value)] || value;
         }
         if (typeof value === 'boolean' || key === 'active') {
             return value ? <Badge color="green">Sim</Badge> : <Badge color="red">Não</Badge>;
@@ -81,7 +117,7 @@ export function AuditTab() {
 
     const renderChanges = (attributes: any, old?: any) => {
         return Object.entries(attributes).map(([key, newValue]) => {
-            if (['updated_at', 'created_at', 'id', 'tenant_id'].includes(key)) return null;
+            if (['updated_at', 'created_at', 'id', 'tenant_id', 'product_id', 'customer_id', 'user_id', 'status_id', 'quote_id', 'category_id'].includes(key)) return null;
             
             const label = FIELD_LABELS[key] || key;
             const oldValue = old ? old[key] : null;
@@ -105,9 +141,7 @@ export function AuditTab() {
     
     if (logs.length === 0) {
         return (
-        <Alert icon={<IconInfoCircle size={16} />} title="Sem registros" color="blue" variant="light">
-            Nenhuma atividade recente registrada.
-        </Alert>
+        <Alert icon={<IconInfoCircle size={16} />} title="Sem registros" color="blue" variant="light">Nenhuma atividade recente registrada.</Alert>
         );
     }
     

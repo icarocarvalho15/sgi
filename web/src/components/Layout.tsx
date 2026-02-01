@@ -124,7 +124,7 @@ export function Layout() {
         <AppShell.Section p="xs" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', }} >
           <Group justify={desktopCollapsed ? 'center' : 'space-between'} wrap="nowrap">
             {!desktopCollapsed && ( <div style={{ overflow: 'hidden' }}>
-              <Text size="xs" fw={700} c="dimmed" style={{ lineHeight: 1.2 }}>SGI v1.5</Text>
+              <Text size="xs" fw={700} c="dimmed" style={{ lineHeight: 1.2 }}>SGI v0.1.8</Text>
               <Text size="xs" c="dimmed" style={{ fontSize: 10, lineHeight: 1.2 }}>by Drav Dev</Text>
             </div> )}
             <Tooltip label={desktopCollapsed ? "Expandir Menu" : "Recolher Menu"} position="right" withArrow transitionProps={{ duration: 0 }} >

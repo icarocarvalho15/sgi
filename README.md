@@ -1,4 +1,4 @@
-# SGI Drav Dev - Plataforma SaaS Multi-Tenant (v1.8)
+# SGI Drav Dev - Plataforma SaaS Multi-Tenant (v0.1.8)
 
 ![Badge Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow) ![Badge Version](https://img.shields.io/badge/Versão-1.8-blue) ![Badge Tech](https://img.shields.io/badge/Stack-Laravel_%2B_React-red)
 
@@ -16,7 +16,7 @@ O diferencial deste projeto reside nas soluções de arquitetura de software imp
 - **Isolamento Lógico (The Wall):** Implementação de `Global Scopes` automáticos em todos os Models. O sistema aplica filtros de segurança (`WHERE tenant_id = X`) em 100% das consultas, garantindo que os dados de uma empresa sejam invisíveis para outras.
 - **Segurança de Fábrica:** Policies e Gates garantem que usuários só acessem recursos do seu próprio tenant.
 
-### 2. 🕵️‍♂️ Auditoria e Rastreabilidade (Novo na v1.8)
+### 2. 🕵️‍♂️ Auditoria e Rastreabilidade (Novo na v0.1.8)
 - **Logs de Atividades Granulares:** Integração profunda com *Events* e *Listeners* para monitorar alterações críticas.
 - **Inteligência de Contexto:** O sistema distingue entre uma edição manual ("Usuário alterou estoque") e uma automação de sistema ("Baixa automática por Conclusão de Produção"), exibindo etiquetas visuais distintas para fácil leitura.
 - **Blindagem de Dados:** Tratamento de *race conditions* para evitar duplicidade de logs em operações automáticas.
@@ -106,15 +106,15 @@ O diferencial deste projeto reside nas soluções de arquitetura de software imp
 ![Fluxo de Caixa](docs/images/10.png)
 ![Controle de Pagamentos](docs/images/11.png)
 
-### Auditoria e Logs (Destaque v1.8)
+### Auditoria e Logs (Destaque v0.1.8)
 *Rastreabilidade completa com distinção visual de eventos automáticos.*
 ![Auditoria Detalhada](docs/images/12.png)
 
 ---
 
-## 🔮 Roadmap de Futuras Melhorias (Plataforma v2.0)
+## 🔮 Roadmap de Futuras Melhorias (Plataforma v0.2.0)
 
-Com a fundação Multi-Tenant (v1.8) concluída, o roadmap se concentra em escalar o produto:
+Com a fundação Multi-Tenant (v0.1.8) concluída, o roadmap se concentra em escalar o produto:
 
 - **Testes Automatizados (A Rede de Segurança):**
   - Expandir a cobertura de testes (com Pest) para todos os módulos, garantindo a estabilidade da plataforma para todos os tenants a cada nova atualização.
@@ -122,7 +122,7 @@ Com a fundação Multi-Tenant (v1.8) concluída, o roadmap se concentra em escal
 - **Refinamentos de Fluxo:**
   - Implementar a funcionalidade de "Reverter Cancelamento" para Admins, com a lógica de estorno de estoque/financeiro.
 
-- **Módulo Fiscal/Financeiro Avançado (v3.0):**
+- **Módulo Fiscal/Financeiro Avançado (v0.3.0):**
   - Integração com APIs de terceiros (ex: Asaas, PlugNotas) para emissão de **NFe/NFSe** e geração de **Boletos Registrados**.
 
 ---
@@ -161,7 +161,7 @@ O projeto utiliza uma stack moderna e robusta, focada em performance e manutenib
 
 1.  **Clonar o Repositório:**
     ```bash
-    git clone [https://github.com/icarocarvalho15/sgi.git](https://github.com/icarocarvalho15/sgi.git)
+    git clone https://github.com/icarocarvalho15/sgi.git
     cd sgi
     ```
 
@@ -181,8 +181,9 @@ O projeto utiliza uma stack moderna e robusta, focada em performance e manutenib
 3.  **Configurar o Frontend (Web):**
     ```bash
     cd web
-    npm install
-    # Crie o arquivo .env com: VITE_API_BASE_URL=http://localhost:8000/api
+    npm install    
+    cp .env.example .env
+    # Ou crie o arquivo .env com: VITE_API_BASE_URL=http://localhost:8000/api
     npm run dev
     ```
 
@@ -197,4 +198,4 @@ O projeto utiliza uma stack moderna e robusta, focada em performance e manutenib
 
 Este projeto foi desenvolvido com dedicação pela **Drav Dev** como parte do nosso portfólio de soluções de software customizadas. Ele demonstra nossa capacidade de construir aplicações full-stack complexas, seguras e com foco na experiência do usuário.
 
-*v1.8 - Release "Audit Logs"*
+*v0.1.8 - Release "Audit Logs"*
